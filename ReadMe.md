@@ -7,6 +7,8 @@ A comprehensive framework for architecting, training, and benchmarking Large Lan
 ## Project Overview
 As LLMs grow in scale, full-parameter fine-tuning becomes computationally prohibitive. This project provides a modular pipeline to evaluate and deploy optimized models using **PEFT**, **Quantization**, and **Pruning**. It includes a full evaluation suite that measures both linguistic quality and system-level performance.
 
+
+
 ### Key Features
 *   **Multi-Strategy Training:** Support for LoRA, Adapter Tuning, Prefix Tuning, BitFit, and Full Fine-Tuning.
 *   **Optimization Engine:** Implementation of 4-bit/8-bit Quantization (bitsandbytes) and structural pruning.
