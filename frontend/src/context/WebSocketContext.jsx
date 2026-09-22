@@ -1,5 +1,12 @@
 // src/context/WebSocketContext.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from 'react';
 import { wsService } from '../services/websocket';
 
 const WebSocketContext = createContext(null);
@@ -20,7 +27,7 @@ export const WebSocketProvider = ({ children }) => {
   useEffect(() => {
     const handleConnected = (data) => {
       setIsConnected(true);
-      setClientId(data.clientId);
+      setClientId(data?.clientId ?? wsService.getClientId());
       setError(null);
     };
 
@@ -28,36 +35,103 @@ export const WebSocketProvider = ({ children }) => {
       setIsConnected(false);
     };
 
-    const handleError = (errorData) => {
-      setError(errorData);
+    const handleError = (err) => {
+      // Normalize the WebSocket error event into something renderable
+      const message =
+        typeof err === 'string'
+          ? err
+          : err?.message || err?.reason || 'WebSocket error';
+      setError(message);
     };
 
-    const unsubscribeConnected = wsService.on('connected', handleConnected);
-    const unsubscribeDisconnected = wsService.on('disconnected', handleDisconnected);
-    const unsubscribeError = wsService.on('error', handleError);
+    const offConnected = wsService.on('connected', handleConnected);
+    const offDisconnected = wsService.on('disconnected', handleDisconnected);
+    const offError = wsService.on('error', handleError);
 
-    // Connect to client endpoint
-    wsService.connect().catch(console.error);
+    // Single owner of the connection lifecycle.
+    // The singleton guards against duplicate connections internally.
+    wsService.connect().catch((err) => {
+      console.error('WebSocket connect failed:', err);
+      setError(err?.message || 'Failed to connect');
+    });
 
     return () => {
-      unsubscribeConnected();
-      unsubscribeDisconnected();
-      unsubscribeError();
-      wsService.disconnect();
+      offConnected();
+      offDisconnected();
+      offError();
+      // Do NOT call wsService.disconnect() here.
+      // The singleton is app-wide; the provider should not tear it down
+      // on every StrictMode double-mount or route change.
     };
   }, []);
 
-  const value = {
-    isConnected,
-    clientId,
-    error,
-    wsService,
-    sendMessage: wsService.send.bind(wsService),
-    subscribeToExecution: wsService.subscribeToExecution.bind(wsService),
-    subscribeToJob: wsService.subscribeToJob.bind(wsService),
-    cancelExecution: wsService.cancelExecution.bind(wsService),
-    cancelJob: wsService.cancelJob.bind(wsService),
-  };
+  /* ---------------- Stable helper functions ---------------- */
+  const send = useCallback((data) => wsService.send(data), []);
+
+  const subscribeToExecution = useCallback(
+    (executionId) => wsService.subscribeToExecution(executionId),
+    []
+  );
+  const subscribeToJob = useCallback(
+    (jobId) => wsService.subscribeToJob(jobId),
+    []
+  );
+  const unsubscribeFromExecution = useCallback(
+    (executionId) => wsService.unsubscribeFromExecution(executionId),
+    []
+  );
+  const unsubscribeFromJob = useCallback(
+    (jobId) => wsService.unsubscribeFromJob(jobId),
+    []
+  );
+  const cancelExecution = useCallback(
+    (executionId) => wsService.cancelExecution(executionId),
+    []
+  );
+  const cancelJob = useCallback((jobId) => wsService.cancelJob(jobId), []);
+  const getExecutionLogs = useCallback(
+    (executionId, nodeId = null, tail = 100) =>
+      wsService.getExecutionLogs(executionId, nodeId, tail),
+    []
+  );
+
+  // Escape hatch: raw service for anything not wrapped above
+  const subscribe = useCallback(
+    (event, handler) => wsService.on(event, handler),
+    []
+  );
+
+  const value = useMemo(
+    () => ({
+      isConnected,
+      clientId,
+      error,
+      wsService, // still exported for advanced cases, but prefer the helpers
+      send,
+      subscribe, // wsService.on(event, handler) — returns unsubscribe
+      subscribeToExecution,
+      subscribeToJob,
+      unsubscribeFromExecution,
+      unsubscribeFromJob,
+      cancelExecution,
+      cancelJob,
+      getExecutionLogs,
+    }),
+    [
+      isConnected,
+      clientId,
+      error,
+      send,
+      subscribe,
+      subscribeToExecution,
+      subscribeToJob,
+      unsubscribeFromExecution,
+      unsubscribeFromJob,
+      cancelExecution,
+      cancelJob,
+      getExecutionLogs,
+    ]
+  );
 
   return (
     <WebSocketContext.Provider value={value}>

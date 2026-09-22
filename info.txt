@@ -1,0 +1,17 @@
+Data ingestion and preprocessing: 
+High-quality data is the foundation of accurate AI. This step collects data from various sources and cleans it by handling missing values, outliers, and standardizing formats. For text data, tokenization is essential. Tools like Apache Kafka, Airflow, and Spark help process large volumes efficiently.
+
+Feature store: 
+A feature store is where processed data is turned into features that models can use. It ensures that the same features are available for both training and live predictions, solving the “offline-online” consistency problem. Common tools include feature store frameworks like Feast, backed by online stores such as Redis and offline warehouses such as BigQuery.
+
+Model training pipeline: 
+This component trains the AI models at scale using GPUs (graphics processing units) or TPUs (tensor processing units). It manages tasks like backpropagation and gradient updates and can handle distributed workloads. Popular tools are TensorFlow, PyTorch, Ray, and Kubeflow.
+
+Model registry: 
+The model registry tracks every version of your models, along with metadata, hyperparameters, and lineage. This makes it easy to roll back to a previous version if a new deployment has issues. Tools like MLflow and SageMaker Model Registry are commonly used.
+
+Model serving and inference: 
+Once a model is ready, it needs to make predictions in real time. This component handles deployment, scaling, and routing requests. For agent-based systems, it can also include logic like calling external tools. Tools like TensorFlow Serving, FastAPI, and ONNX Runtime are standard here.
+
+Monitoring and feedback: 
+Continuous monitoring helps ensure the system remains reliable. This includes tracking model performance, detecting data drift, and identifying bias. Feedback loops let models improve over time. Prometheus, Grafana, and Evidently AI are widely used for observability.
