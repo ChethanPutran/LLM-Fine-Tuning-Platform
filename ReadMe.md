@@ -315,4 +315,4 @@ The codebase follows SOLID principles and common design patterns (see
 
 ## License
 
-No license file is currently included — add one before distributing.
+MIT License
